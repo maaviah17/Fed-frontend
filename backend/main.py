@@ -155,14 +155,39 @@ def start_round(payload: StartPayload):
     return {"ok": True, "message": "Round started"}
 
 
+def filter_client_log(raw_log: str) -> str:
+    """Only keep the important lines from noisy client logs."""
+    keep_keywords = [
+        "Train Loss",
+        "NOISE Attack",
+        "Data Loaded",
+        "Identity Verified",
+        "ERROR",
+    ]
+    filtered = [
+        line for line in raw_log.splitlines()
+        if any(kw in line for kw in keep_keywords)
+    ]
+    return "\n".join(filtered)
+
+
 @app.post("/update-logs")
 def update_logs(payload: LogPayload):
     """Colab calls this periodically to push live log content."""
-    if payload.client1: state["logs"]["client1"] = payload.client1
-    if payload.client2: state["logs"]["client2"] = payload.client2
+    if payload.client1: state["logs"]["client1"] = filter_client_log(payload.client1)
+    if payload.client2: state["logs"]["client2"] = filter_client_log(payload.client2)
     if payload.gm:      state["logs"]["gm"]      = payload.gm
     if payload.server:  state["logs"]["server"]  = payload.server
     return {"ok": True}
+
+# @app.post("/update-logs")
+# def update_logs(payload: LogPayload):
+#     """Colab calls this periodically to push live log content."""
+#     if payload.client1: state["logs"]["client1"] = payload.client1
+#     if payload.client2: state["logs"]["client2"] = payload.client2
+#     if payload.gm:      state["logs"]["gm"]      = payload.gm
+#     if payload.server:  state["logs"]["server"]  = payload.server
+#     return {"ok": True}
 
 
 @app.post("/finish")
